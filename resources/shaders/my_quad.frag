@@ -22,8 +22,8 @@ bool CompareLuminance(in vec3 first, in vec3 second) {
 void BubbleSort(inout vec4 array[9]) {
   for (int i = 0; i < 8; ++i) {
     for (int j = 0; j < 8 - i; ++j) {
-      if (!CompareLuminance(array[j], array[j + 1])) {
-        tmp = array[j];
+      if (CompareLuminance(vec3(array[j]), vec3(array[j + 1])) == false) {
+        vec4 tmp = array[j];
         array[j] = array[j + 1];
         array[j + 1] = tmp;
       }
@@ -32,7 +32,7 @@ void BubbleSort(inout vec4 array[9]) {
 }
 
 vec4 MedianFilter() {
-  vec4 neighbours[9] = {
+  vec4 neighbours[9] = vec4[9](
     textureOffset(colorTex, surf.texCoord, ivec2(-1, -1)),
     textureOffset(colorTex, surf.texCoord, ivec2(-1,  0)),
     textureOffset(colorTex, surf.texCoord, ivec2(-1,  1)),
@@ -42,9 +42,9 @@ vec4 MedianFilter() {
     textureOffset(colorTex, surf.texCoord, ivec2( 1, -1)),
     textureOffset(colorTex, surf.texCoord, ivec2( 1,  0)),
     textureOffset(colorTex, surf.texCoord, ivec2( 1,  1))
-  };
+  );
   BubbleSort(neighbours);
-  return neightbours[4];
+  return neighbours[4];
 }
 
 void main() {
