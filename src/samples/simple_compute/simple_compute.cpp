@@ -41,6 +41,13 @@ void SimpleCompute::InitVulkan(const char** a_instanceExtensions, uint32_t a_ins
   m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_physicalDevice, m_device, m_transferQueue, m_queueFamilyIDXs.compute, 8*1024*1024);
 }
 
+void SimpleCompute::InitPipeline() {
+  SetupSimplePipeline();
+  CreateComputePipeline();
+
+  BuildCommandBufferSimple(m_cmdBufferCompute, nullptr);
+}
+
 std::shared_ptr<vk_utils::ICopyEngine> SimpleCompute::GetCopyHelper() const {
   return m_pCopyHelper;
 }
@@ -93,6 +100,7 @@ void SimpleCompute::SetupSimplePipeline()
                                                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT);
   m_output = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+  vk_utils::allocateAndBindWithPadding(m_device, m_physicalDevice, {m_input, m_output}, 0);
   m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1);
 
   // Создание descriptor set для передачи буферов в шейдер
@@ -118,7 +126,7 @@ void SimpleCompute::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeli
 
   vkCmdPushConstants(a_cmdBuff, m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(m_length), &m_length);
 
-  vkCmdDispatch(a_cmdBuff, 1, 1, 1);
+  vkCmdDispatch(a_cmdBuff, (m_length - 1) / 512 + 1, 1, 1);
 
   VK_CHECK_RESULT(vkEndCommandBuffer(a_cmdBuff));
 }
@@ -216,5 +224,5 @@ void SimpleCompute::Execute()
   VK_CHECK_RESULT(vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_fence));
 
   //Ждём конца выполнения команд
-  VK_CHECK_RESULT(vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, 100000000000));
+  VK_CHECK_RESULT(vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, 1000000000000000000));
 }

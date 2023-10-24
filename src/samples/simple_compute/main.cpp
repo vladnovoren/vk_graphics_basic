@@ -62,21 +62,20 @@ std::vector<float> GenRandomArray(size_t n, float mod) {
   return array;
 }
 
-int main()
-{
-  constexpr int LENGTH = 10;
+int main() {
+  constexpr int LENGTH = 1000000;
   constexpr int VULKAN_DEVICE_ID = 0;
 
   auto device = std::make_unique<SimpleCompute>(LENGTH);
-  if(device == nullptr)
-  {
+  if (device == nullptr) {
     std::cout << "Can't create render of specified type" << std::endl;
     return 1;
   }
 
   device->InitVulkan(nullptr, 0, VULKAN_DEVICE_ID);
+  device->InitPipeline();
 
-  auto input = GenRandomArray(1000000, 10);
+  auto input = GenRandomArray(LENGTH, 10);
 
   std::cout << ExecutionTime(ComputeOnCpu, input) << '\n';
   std::cout << ExecutionTime(ComputeOnGpu, *device, input) << '\n';

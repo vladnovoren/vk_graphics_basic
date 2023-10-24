@@ -20,6 +20,8 @@ public:
   inline VkInstance   GetVkInstance() const override { return m_instance; }
   void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
 
+  void InitPipeline();
+
   std::shared_ptr<vk_utils::ICopyEngine> GetCopyHelper() const;
 
   VkBuffer GetInputBuffer() const;
