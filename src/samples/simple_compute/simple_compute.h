@@ -20,6 +20,11 @@ public:
   inline VkInstance   GetVkInstance() const override { return m_instance; }
   void InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId) override;
 
+  std::shared_ptr<vk_utils::ICopyEngine> GetCopyHelper() const;
+
+  VkBuffer GetInputBuffer() const;
+  VkBuffer GetOutputBuffer() const;
+
   void Execute() override;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +69,7 @@ private:
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
   uint32_t m_length  = 16u;
-  
+
   VkPhysicalDeviceFeatures m_enabledDeviceFeatures = {};
   std::vector<const char*> m_deviceExtensions      = {};
   std::vector<const char*> m_instanceExtensions    = {};
@@ -73,14 +78,15 @@ private:
   std::vector<const char*> m_validationLayers;
   std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
 
-  VkDescriptorSet       m_sumDS; 
+  VkDescriptorSet       m_sumDS;
   VkDescriptorSetLayout m_sumDSLayout = nullptr;
-  
+
   VkPipeline m_pipeline;
   VkPipelineLayout m_layout;
 
-  VkBuffer m_A, m_B, m_sum;
- 
+  VkBuffer m_input;
+  VkBuffer m_output;
+
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
 

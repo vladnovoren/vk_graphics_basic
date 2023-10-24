@@ -1,4 +1,5 @@
 #include "simple_compute.h"
+#include "vk_copy.h"
 
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
@@ -36,10 +37,21 @@ void SimpleCompute::InitVulkan(const char** a_instanceExtensions, uint32_t a_ins
   m_commandPool = vk_utils::createCommandPool(m_device, m_queueFamilyIDXs.compute, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
   m_cmdBufferCompute = vk_utils::createCommandBuffers(m_device, m_commandPool, 1)[0];
-  
+
   m_pCopyHelper = std::make_shared<vk_utils::SimpleCopyHelper>(m_physicalDevice, m_device, m_transferQueue, m_queueFamilyIDXs.compute, 8*1024*1024);
 }
 
+std::shared_ptr<vk_utils::ICopyEngine> SimpleCompute::GetCopyHelper() const {
+  return m_pCopyHelper;
+}
+
+VkBuffer SimpleCompute::GetInputBuffer() const {
+  return m_input;
+}
+
+VkBuffer SimpleCompute::GetOutputBuffer() const {
+  return m_output;
+}
 
 void SimpleCompute::CreateInstance()
 {
@@ -77,33 +89,17 @@ void SimpleCompute::SetupSimplePipeline()
   };
 
   // Создание и аллокация буферов
-  m_A = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+  m_input = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-  m_B = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+  m_output = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-  m_sum = vk_utils::createBuffer(m_device, sizeof(float) * m_length, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-  vk_utils::allocateAndBindWithPadding(m_device, m_physicalDevice, {m_A, m_B, m_sum}, 0);
-
   m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1);
 
   // Создание descriptor set для передачи буферов в шейдер
   m_pBindings->BindBegin(VK_SHADER_STAGE_COMPUTE_BIT);
-  m_pBindings->BindBuffer(0, m_A);
-  m_pBindings->BindBuffer(1, m_B);
-  m_pBindings->BindBuffer(2, m_sum);
+  m_pBindings->BindBuffer(0, m_input);
+  m_pBindings->BindBuffer(1, m_output);
   m_pBindings->BindEnd(&m_sumDS, &m_sumDSLayout);
-
-  // Заполнение буферов
-  std::vector<float> values(m_length);
-  for (uint32_t i = 0; i < values.size(); ++i) {
-    values[i] = (float)i;
-  }
-  m_pCopyHelper->UpdateBuffer(m_A, 0, values.data(), sizeof(float) * values.size());
-  for (uint32_t i = 0; i < values.size(); ++i) {
-    values[i] = (float)i * i;
-  }
-  m_pCopyHelper->UpdateBuffer(m_B, 0, values.data(), sizeof(float) * values.size());
 }
 
 void SimpleCompute::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeline)
@@ -135,9 +131,8 @@ void SimpleCompute::CleanupPipeline()
     vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_cmdBufferCompute);
   }
 
-  vkDestroyBuffer(m_device, m_A, nullptr);
-  vkDestroyBuffer(m_device, m_B, nullptr);
-  vkDestroyBuffer(m_device, m_sum, nullptr);
+  vkDestroyBuffer(m_device, m_input, nullptr);
+  vkDestroyBuffer(m_device, m_output, nullptr);
 
   vkDestroyPipelineLayout(m_device, m_layout, nullptr);
   vkDestroyPipeline(m_device, m_pipeline, nullptr);
@@ -163,7 +158,7 @@ void SimpleCompute::CreateComputePipeline()
   createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.pCode    = code.data();
   createInfo.codeSize = code.size()*sizeof(uint32_t);
-    
+
   VkShaderModule shaderModule;
   // Создаём шейдер в вулкане
   VK_CHECK_RESULT(vkCreateShaderModule(m_device, &createInfo, NULL, &shaderModule));
@@ -222,10 +217,4 @@ void SimpleCompute::Execute()
 
   //Ждём конца выполнения команд
   VK_CHECK_RESULT(vkWaitForFences(m_device, 1, &m_fence, VK_TRUE, 100000000000));
-
-  std::vector<float> values(m_length);
-  m_pCopyHelper->ReadBuffer(m_sum, 0, values.data(), sizeof(float) * values.size());
-  for (auto v: values) {
-    std::cout << v << ' ';
-  }
 }
