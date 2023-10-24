@@ -92,7 +92,7 @@ void SimpleCompute::CreateDevice(uint32_t a_deviceId)
 void SimpleCompute::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
-      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             3}
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2}
   };
 
   // Создание и аллокация буферов
@@ -205,11 +205,6 @@ void SimpleCompute::CreateComputePipeline()
 
 void SimpleCompute::Execute()
 {
-  SetupSimplePipeline();
-  CreateComputePipeline();
-
-  BuildCommandBufferSimple(m_cmdBufferCompute, nullptr);
-
   VkSubmitInfo submitInfo = {};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.commandBufferCount = 1;

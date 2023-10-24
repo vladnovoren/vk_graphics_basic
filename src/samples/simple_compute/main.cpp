@@ -22,10 +22,10 @@ void ComputeOnCpu(const std::vector<float>& input) {
       answer[i] += input[i - j];
     }
     for (size_t j = 1; j <= 3 && i + j < n; ++j) {
-      answer[i] += input[i - j];
+      answer[i] += input[i + j];
     }
     answer[i] /= 7.f;
-    answer[i] -= input[i];
+    answer[i] = input[i] - answer[i];
     sum += answer[i];
   }
 
