@@ -121,7 +121,9 @@ private:
     float  lightTargetDist;  ///!< identify depth range
     Camera cam;              ///!< user control for light to later get light worldViewProj matrix
     bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
-  
+
+    float innerLightAngle  = 5.f;
+    float outterLightAngle = 10.f;
   } m_light;
  
   void DrawFrameSimple(bool draw_gui);
