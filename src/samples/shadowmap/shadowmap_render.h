@@ -45,6 +45,7 @@ public:
 
 private:
   etna::GlobalContext* m_context;
+  etna::Image mainView;
   etna::Image mainViewDepth;
   etna::Image shadowMap;
   etna::Sampler defaultSampler;
@@ -123,6 +124,8 @@ private:
     bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise
   
   } m_light;
+
+  bool m_ssaa;
  
   void DrawFrameSimple(bool draw_gui);
 
