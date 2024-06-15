@@ -1,0 +1,82 @@
+#version 450
+
+const int SAMPLES_CNT = 22;
+
+const float SAMPLE_OFFSETS[SAMPLES_CNT] = float[SAMPLES_CNT](
+    -20.09471663891408,
+    -18.115374500147027,
+    -16.139832407661082,
+    -14.1684792568739,
+    -12.201613265873693,
+    -10.239385576926011,
+    -8.281739853232981,
+    -6.328357272092126,
+    -4.378621204796657,
+    -2.431625915613778,
+    -0.4862426846689485,
+    1.4588111840004858,
+    3.4048471718931532,
+    5.35308381175656,
+    7.304547036499911,
+    9.260003189282239,
+    11.219917592867032,
+    13.184471765481433,
+    15.153610827558811,
+    17.127102621926518,
+    19.104597174946242,
+    21
+);
+
+const float SAMPLE_WEIGHTS[SAMPLES_CNT] = float[SAMPLES_CNT](
+    3.9970970977551834e-11,
+    2.684836908353052e-9,
+    1.1664824456367887e-7,
+    0.0000032814297817343885,
+    0.00005983099089533952,
+    0.0007078187087507443,
+    0.005438629608575598,
+    0.02716676949954615,
+    0.08829611480297161,
+    0.18686497286228443,
+    0.25764629787468274,
+    0.2314878354280584,
+    0.1355210984452339,
+    0.051677144540684644,
+    0.01282675722529352,
+    0.0020706558265060557,
+    0.00021720985937379194,
+    0.00001479129840549244,
+    6.531898907873928e-7,
+    1.8686280078853456e-8,
+    3.459467712299449e-10,
+    3.785916025125946e-12
+);
+
+layout (binding = 0) uniform sampler2D input_image;
+layout (binding = 1, rg32f) uniform writeonly image2D output_image;
+
+vec4 GaussBlur(vec2 blur_direction, vec2 pixel_position, vec2 texture_dims) {
+    vec2 accumulated_color = vec2(0.0);
+    for (int i = 0; i < SAMPLES_CNT; ++i) {
+        vec2 offset = blur_direction * SAMPLE_OFFSETS[i] / texture_dims;
+        float weight = SAMPLE_WEIGHTS[i];
+        accumulated_color += texture(input_image, pixel_position + offset).xy * weight;
+    }
+    return vec4(accumulated_color, 0.0, 0.0);
+}
+
+layout(push_constant) uniform PushConstants {
+    vec2 blur_direction;
+};
+
+layout(local_size_x = 32, local_size_y = 32) in;
+
+void main() {
+    ivec2 tex_size = textureSize(input_image, 0);
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    vec2 tex_size_f = vec2(tex_size);
+    vec2 pixel_coords_f = vec2(pixel_coords) / tex_size_f;
+    if (pixel_coords.x < tex_size.x && pixel_coords.y < tex_size.y) {
+        imageStore(output_image, pixel_coords, GaussBlur(blur_direction, pixel_coords_f, tex_size_f));
+    }
+}
