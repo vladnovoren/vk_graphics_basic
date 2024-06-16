@@ -40,6 +40,7 @@ void SimpleShadowmapRender::InitVulkan(const char** a_instanceExtensions, uint32
   m_pScnMgr = std::make_shared<SceneManager>(
     m_context->getDevice(), m_context->getPhysicalDevice(),
     m_context->getQueueFamilyIdx(), m_context->getQueueFamilyIdx(), false);
+  m_uniforms.scale = 1.5f;
 }
 
 void SimpleShadowmapRender::SetupDeviceExtensions()

@@ -126,9 +126,25 @@ void SimpleShadowmapRender::SetupSimplePipeline()
 
 /// COMMAND BUFFER FILLING
 
+static float GenerateChannel() {
+  return (rand() % 255 + 0.0f) / 255;
+}
+
+static float3 GenerateColor() {
+  return float3{ GenerateChannel(), GenerateChannel(), GenerateChannel() };
+}
+
+static std::vector<float3> GenerateColors(std::size_t n) {
+  std::vector<float3> colors(n);
+  for (auto& color : colors) {
+    color = GenerateColor();
+  }
+  return colors;
+}
+
 void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4x4& a_wvp, VkPipelineLayout a_pipelineLayout)
 {
-  VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT);
+  VkShaderStageFlags stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
   VkDeviceSize zero_offset = 0u;
   VkBuffer vertexBuf = m_pScnMgr->GetVertexBuffer();
@@ -137,12 +153,15 @@ void SimpleShadowmapRender::DrawSceneCmd(VkCommandBuffer a_cmdBuff, const float4
   vkCmdBindVertexBuffers(a_cmdBuff, 0, 1, &vertexBuf, &zero_offset);
   vkCmdBindIndexBuffer(a_cmdBuff, indexBuf, 0, VK_INDEX_TYPE_UINT32);
 
+  static auto colors = GenerateColors(m_pScnMgr->InstancesNum());
+
   pushConst2M.projView = a_wvp;
   for (uint32_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
   {
     auto inst         = m_pScnMgr->GetInstanceInfo(i);
     pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
-    vkCmdPushConstants(a_cmdBuff, a_pipelineLayout,
+    pushConst2M.color = colors[i];
+    vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.getVkPipelineLayout(),
       stageFlags, 0, sizeof(pushConst2M), &pushConst2M);
 
     auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
